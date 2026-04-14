@@ -3,3 +3,5 @@ server
 *.o
 *.dSYM/
 .DS_Store
+HttpServer.code-workspace
+.vscode/
