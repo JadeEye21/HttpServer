@@ -9,6 +9,14 @@ namespace HDE{
         public:
         BindingSocket(int domain, int service, int protocol, int port, u_long interface);
         int connect_to_network(int sock, struct sockaddr_in address);
+
+         //getters
+        int get_binding();
+
+        private:
+        int binding;
     };
+
+   
 }
 #endif

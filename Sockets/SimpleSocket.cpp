@@ -34,7 +34,3 @@ int HDE::SimpleSocket::get_connection(){
 	return connection;
 }
 
-//setters
-void HDE::SimpleSocket::set_connection(int connection){
-	this->connection = connection;
-}
