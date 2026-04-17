@@ -5,6 +5,7 @@
 #include <iostream>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <unistd.h>
 
 namespace HDE{
 	class SimpleSocket{
@@ -14,7 +15,7 @@ namespace HDE{
 		int connection;
 	public:
 	 SimpleSocket(int domain, int service, int protocol, int port, u_long interface);
-
+	 ~SimpleSocket();
 	 virtual int connect_to_network(int sock, struct sockaddr_in address) = 0;
 	 void test_connection(int);
 

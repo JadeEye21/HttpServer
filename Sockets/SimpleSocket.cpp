@@ -34,3 +34,8 @@ int HDE::SimpleSocket::get_connection(){
 	return connection;
 }
 
+HDE::SimpleSocket::~SimpleSocket(){
+	// shutdown(sock, 1);
+	close(sock);
+}
+

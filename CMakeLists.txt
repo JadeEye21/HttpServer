@@ -11,7 +11,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(server
     main.cpp
-    hdelibc.cpp
+    Utilities/Utils.cpp
     Servers/SimpleServer.cpp
     Servers/TestServer.cpp
     Sockets/SimpleSocket.cpp
