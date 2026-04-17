@@ -17,7 +17,8 @@ class SimpleServer {
 
 public:
 	SimpleServer(int domain, int service, int protocol, int port, u_long interface, int backlog);
-	
+	virtual ~SimpleServer();
+
 	virtual void launch()=0;
 
 	//getters
@@ -26,7 +27,7 @@ public:
 
 private:
 	ListeningSocket * socket;
-	virtual void accepter() =0;
+	virtual bool accepter() =0;
 	virtual void handler() =0;
 	virtual void responder()=0;
 };
