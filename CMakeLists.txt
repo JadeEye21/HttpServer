@@ -14,6 +14,7 @@ add_executable(server
     Utilities/Utils.cpp
     Servers/SimpleServer.cpp
     Servers/TestServer.cpp
+    Servers/MultiClientServer.cpp
     Sockets/SimpleSocket.cpp
     Sockets/BindingSocket.cpp
     Sockets/ListeningSocket.cpp

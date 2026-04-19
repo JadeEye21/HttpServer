@@ -23,11 +23,16 @@ public:
 
 	//getters
 	ListeningSocket * get_socket();
+	std::string header_success_text = "HTTP/1.1 200 OK\r\n\r\n";
+	std::string header_success_html = "HTTP/1.1 200 OK\r\nContent-Type: text/html; Content-Length:";
+	std::string header_failure = "HTTP/1.1 400 Invalid\r\n\r\n";
 
 
 private:
+	int new_socket;
+
 	ListeningSocket * socket;
-	virtual bool accepter() =0;
+	virtual bool accepter();
 	virtual void handler() =0;
 	virtual void responder()=0;
 };

@@ -18,3 +18,7 @@ HDE::SimpleServer::~SimpleServer() {
 HDE::ListeningSocket * HDE::SimpleServer::get_socket(){
     return socket;
 }
+
+bool HDE::SimpleServer::accepter(){
+    return false;
+}

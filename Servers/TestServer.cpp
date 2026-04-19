@@ -181,6 +181,7 @@ void HDE::TestServer::launch(){
         }
         handler();
         reader();
+        sleep(5);
         read_first_line();
         // responder();
         verify();

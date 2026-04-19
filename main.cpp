@@ -1,6 +1,7 @@
 #include "hdelibc.hpp"
 #include <stdio.h>
-#include "Servers/TestServer.hpp"
+// #include "Servers/TestServer.hpp"
+#include "Servers/MultiClientServer.hpp"
 
 int main(){
     // std::cout<<"Starting socket...."<<std::endl;
@@ -9,5 +10,5 @@ int main(){
     // std::cout<<"Listening socket...."<<std::endl;
     // HDE::ListeningSocket ls = HDE::ListeningSocket(AF_INET, SOCK_STREAM, 0, 81, INADDR_ANY, 10);
     // std::cout<<"Success \n";
-    HDE::TestServer t;
+    HDE::MultiClientServer mcs;
 }
