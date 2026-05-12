@@ -6,28 +6,13 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-# Optional: compile_commands.json for clangd / IDE
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 add_executable(server
     main.cpp
-    Utilities/Utils.cpp
-    Servers/SimpleServer.cpp
-    Servers/TestServer.cpp
-    Servers/MultiClientServer.cpp
-    Sockets/SimpleSocket.cpp
-    Sockets/BindingSocket.cpp
-    Sockets/ListeningSocket.cpp
-    Sockets/ConnectingSocket.cpp
+    SingleFileHttpServer.cpp
 )
 
-target_include_directories(server PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/Sockets
-    ${CMAKE_CURRENT_SOURCE_DIR}/Servers
-)
-
-# macOS / Linux socket APIs
 if(APPLE)
     target_compile_definitions(server PRIVATE _DARWIN_C_SOURCE)
 endif()

@@ -36,26 +36,99 @@ struct simple_socket {
 };
 
 struct serverObject{
-	int new_socket = -1;
+	int connection_socket = -1;
 	char buffer[30000];
 	std::unique_ptr<request> request;
 };
 
+struct HttpResponse {
+    int status_code = 200;
+    std::string status_text = "OK";
+    std::unordered_map<std::string, std::string> headers;
+    std::string body;
+
+    // Builder-style setters (return *this for chaining)
+    HttpResponse& set_status(int code, std::string text) {
+        status_code = code;
+        status_text = text;
+        return *this;
+    }
+
+    HttpResponse& set_body(std::string content) {
+        body = content;
+        return *this;
+    }
+
+    HttpResponse& add_header(std::string key, std::string value) {
+        headers[key] = value;
+        return *this;
+    }
+
+    HttpResponse& set_content_type(std::string type) {
+        headers["Content-Type"] = type;
+        return *this;
+    }
+
+    // Serialize to HTTP wire format
+    std::string to_string() const {
+        std::string response = "HTTP/1.1 " + std::to_string(status_code) + " " + status_text + "\r\n";
+        
+        // Auto-add Content-Length if not already set
+        if (headers.find("Content-Length") == headers.end() && !body.empty()) {
+            response += "Content-Length: " + std::to_string(body.length()) + "\r\n";
+        }
+        
+        // Add all headers
+        for (const auto& [key, value] : headers) {
+            response += key + ": " + value + "\r\n";
+        }
+        
+        response += "\r\n" + body;
+        return response;
+    }
+
+    // Static factory methods for common responses
+    static HttpResponse ok(std::string body_text) {
+        HttpResponse r;
+        r.set_body(body_text).set_content_type("text/plain");
+        return r;
+    }
+
+    static HttpResponse html(std::string html_content) {
+        HttpResponse r;
+        r.set_body(html_content).set_content_type("text/html");
+        return r;
+    }
+
+    static HttpResponse error_400(std::string message = "Bad Request") {
+        HttpResponse r;
+        r.set_status(400, "Bad Request").set_body(message).set_content_type("text/plain");
+        return r;
+    }
+
+    static HttpResponse error_404(std::string message = "Not Found") {
+        HttpResponse r;
+        r.set_status(404, "Not Found").set_body(message).set_content_type("text/plain");
+        return r;
+    }
+};
+
 class SingleFileHttpServer {
 public:
-	SingleFileHttpServer();
+	SingleFileHttpServer(int port);
 	~SingleFileHttpServer();
 	
     struct simple_socket *create_socket(int domain, int service, int protocol, int port, u_long interface);
     void create_listening_socket(int domain, int service, int protocol, int port, u_long, int backlog);
     int connect_to_network(struct simple_socket *socket);
-    void test_connection(int);
+    void test_connection(int, std::string item_name);
 	int start_listening();
 
 	//Server stuff
-	void launch_server(int domain, int service, int protocol, int port, u_long interface, int backlog);
+	void launch_server();
 	bool accepter();
     bool server_connection_handler(std::unique_ptr<serverObject> childServerObject);
+    void writer(std::unique_ptr<serverObject> &childServerObject, const HttpResponse& responsesss);
     void handler();
 
 private:

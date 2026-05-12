@@ -14,7 +14,10 @@ const std::string DOUBLE_CRLF = "\r\n\r\n";
 const int buffer_size = 30000;
 
 
-hdcpp::SingleFileHttpServer::SingleFileHttpServer() {}
+hdcpp::SingleFileHttpServer::SingleFileHttpServer(int port) {
+	create_listening_socket(AF_INET, SOCK_STREAM, 0, port, INADDR_ANY, 10);
+	launch_server();
+}
 
 /*Http Parser functions, can be taken into a separate CPP file*/
 
@@ -110,44 +113,49 @@ void hdcpp::HttpParser::parse_request_body(std::unique_ptr<serverObject>& childS
 
 /*Server functions*/
 hdcpp::simple_socket* hdcpp::SingleFileHttpServer::create_socket(int domain, int service, int protocol, int port, u_long interface){
-    hdcpp::simple_socket* new_socket = new hdcpp::simple_socket();
-    new_socket->address.sin_family = domain;
-    new_socket->address.sin_port = htons(port);
-    new_socket->address.sin_addr.s_addr = htonl(interface);
+    hdcpp::simple_socket* connection_socket = new hdcpp::simple_socket();
+    connection_socket->address.sin_family = domain;
+    connection_socket->address.sin_port = htons(port);
+    connection_socket->address.sin_addr.s_addr = htonl(interface);
 
-    new_socket->sock = socket(domain, service, protocol);
-    test_connection(new_socket->sock);
-    return new_socket;
+    connection_socket->sock = socket(domain, service, protocol);
+    test_connection(connection_socket->sock, "");
+    return connection_socket;
 }
 
 void hdcpp::SingleFileHttpServer::create_listening_socket(int domain, int service, int protocol, int port, u_long interface, int backlog){
 	this->listening_socket = create_socket(domain, service, protocol, port, interface);
 	this->backlog = backlog;
-	test_connection(start_listening());
+	int binding = connect_to_network(this->listening_socket);
+	if(binding < 0){
+		perror("Socket failed to bind to the server");
+		return;
+	}
+	test_connection(start_listening(), "started listening");
 }
 
 int hdcpp::SingleFileHttpServer::start_listening(){
 	return listen(listening_socket->sock, backlog);
 }
 
-void hdcpp::SingleFileHttpServer::test_connection(int item_to_test){
+void hdcpp::SingleFileHttpServer::test_connection(int item_to_test, std::string item_name){
 	//Confirms that the socket or connection has been properly established
 	if(item_to_test <0){
 		perror("Failed to connect...");
 		exit(EXIT_FAILURE);
 	}
     else{
-        std::cout<<"Connected to the socket\n";
+        std::cout<<"Connected to the socket: "<<item_name<<" \n";
     }
 }
 
 int hdcpp::SingleFileHttpServer::connect_to_network(hdcpp::simple_socket* socket){
 	int binding = bind(socket->sock, (struct sockaddr*)&(socket->address), sizeof(socket->address));
-	test_connection(binding);
+	test_connection(binding, "binding socket at connect_to_network");
 	return binding;
 }
 
-void hdcpp::SingleFileHttpServer::launch_server(int domain, int service, int protocol, int port, u_long interface, int backlog){
+void hdcpp::SingleFileHttpServer::launch_server(){
 	while(true){
 		std::cout<<"============Waiting===============\n";
 		accepter();
@@ -157,7 +165,7 @@ void hdcpp::SingleFileHttpServer::launch_server(int domain, int service, int pro
 
 bool hdcpp::SingleFileHttpServer::accepter(){
 	std::unique_ptr<serverObject> childServerObject = std::make_unique<serverObject>();
-	int *new_connecting_socket = &childServerObject->new_socket;
+	int *new_connecting_socket = &childServerObject->connection_socket;
 	struct sockaddr_in peer_address{};
     socklen_t addrlen = sizeof(peer_address);
 	*new_connecting_socket = accept(this->listening_socket->sock, (struct sockaddr *)&peer_address, &addrlen);
@@ -167,14 +175,63 @@ bool hdcpp::SingleFileHttpServer::accepter(){
         return false;
     }
 
-	std::thread child_thread(&server_connection_handler, this, std::move(childServerObject));
+	std::thread child_thread(&SingleFileHttpServer::server_connection_handler, this, std::move(childServerObject));
 	child_thread.detach();
 	
 	return true;
 }
 
 bool hdcpp::SingleFileHttpServer::server_connection_handler(std::unique_ptr<serverObject> childServerObject){
+	std::cout<<"Thread id :"<<std::this_thread::get_id()<<std::endl;
+
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();
+
+	char *buffer = childServerObject->buffer;
+	std::memset(buffer, 0, buffer_size);
+	const size_t max_read = buffer_size -1;
+	ssize_t n = read(childServerObject->connection_socket, buffer, max_read);
+
+	if(n<=0){
+		if(n<0)perror("Server not able to read the message");
+		close(childServerObject->connection_socket);
+		childServerObject.release();
+		return false;
+	}
+    buffer[static_cast<size_t>(n)] = '\0';
+	childServerObject->request = std::make_unique<hdcpp::request>();
+	hdcpp::HttpParser::parse_request(childServerObject);
+	auto response = hdcpp::HttpResponse::ok("Hello, " + childServerObject->request->request_path + " from hdcpp.\n");
+	hdcpp::SingleFileHttpServer::writer(childServerObject, response);
+
+	std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << "Time difference = " << std::chrono::duration_cast<std::chrono::seconds> (end - begin).count() << "[s]" << std::endl;
+    std::cout<<"Thread id :"<<std::this_thread::get_id();
+	std::cout<<std::endl;
 	return true;
+}
+
+void hdcpp::SingleFileHttpServer::writer(std::unique_ptr<serverObject>& childServerObject, const HttpResponse& response){
+	if (childServerObject->connection_socket < 0) {
+        childServerObject->request.reset();
+        return;
+    }
+	std::string response_str = response.to_string();
+    const char* p = response_str.c_str();
+    size_t remaining = response_str.length();
+    
+    while(remaining > 0){
+        ssize_t w = write(childServerObject->connection_socket, p, remaining);
+        if(w < 0){
+            perror("Server not able to write the message");
+            break;
+        }
+        if(w == 0) break;
+        p += static_cast<size_t>(w);
+        remaining -= static_cast<size_t>(w);
+    }
+
+	close(childServerObject->connection_socket);
+	childServerObject.release();
 }
 
 hdcpp::SingleFileHttpServer::~SingleFileHttpServer(){
