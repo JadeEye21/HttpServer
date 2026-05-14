@@ -11,6 +11,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_executable(server
     main.cpp
     SingleFileHttpServer.cpp
+    Redis/RedisMainServer.cpp
+    Redis/RedisProtocolParser.cpp
 )
 
 if(APPLE)
