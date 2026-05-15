@@ -4,6 +4,7 @@
 // #include "Servers/MultiClientServer.hpp"
 #include "SingleFileHttpServer.hpp"
 #include "Redis/RedisMainServer.hpp"
+#include "Redis/RedisProtocolSerializer.hpp"
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -68,10 +69,28 @@ int main(){
         {"overflow: larger than int64", ":9223372036854775808\r\n"}
     };
 
-    for (const auto& [name, input] : cases) {
+    // for (const auto& [name, input] : cases) {
+    //     std::cout << "\n=== " << name << " ===\n";
+    //     std::cout << "bytes=" << input.size() << "\n";
+    //     rms.read_input(input);
+    // }
+
+    const std::vector<std::pair<const char*, std::string>> serializer_cases = {
+        {"serializer: single token", "PING"},
+        {"serializer: two tokens", "GET key"},
+        {"serializer: three tokens", "SET mykey myvalue"},
+        {"serializer: quoted interior space", "echo \"hello world\""},
+        {"serializer: empty quoted segment", "\"\""},
+        {"serializer: only spaces", "   "},
+    };
+
+    for (const auto& [name, input] : serializer_cases) {
         std::cout << "\n=== " << name << " ===\n";
         std::cout << "bytes=" << input.size() << "\n";
-        rms.read_input(input);
+        std::string res = hdcpp::RedisProtocolSerializer::read_input(input);
+        std::cout << "Testing the same for deserialization";
+        int pointer =0;
+        hdcpp::RedisProtocolParser::input_type(res, pointer);
     }
 
     // std::ifstream file("test.txt");

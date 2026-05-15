@@ -13,6 +13,7 @@ add_executable(server
     SingleFileHttpServer.cpp
     Redis/RedisMainServer.cpp
     Redis/RedisProtocolParser.cpp
+    Redis/RedisProtocolSerializer.cpp
 )
 
 if(APPLE)
